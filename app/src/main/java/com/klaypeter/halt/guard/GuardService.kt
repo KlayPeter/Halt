@@ -16,6 +16,7 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import com.klaypeter.halt.BuildConfig
 import com.klaypeter.halt.MainActivity
 import com.klaypeter.halt.data.Allowance
 import com.klaypeter.halt.data.GuardRepository
@@ -176,8 +177,13 @@ class GuardService : AccessibilityService() {
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val pkg = event.packageName?.toString() ?: return
         if (pkg in ignoredPackages) return
-        Log.v(TAG, "前台事件 $pkg")
+        logVerbose("前台事件 $pkg")
         onForegroundChanged(pkg)
+    }
+
+    /** 高频日志只在 debug 包打，release 里不刷 logcat。 */
+    private fun logVerbose(message: String) {
+        if (BuildConfig.DEBUG) Log.v(TAG, message)
     }
 
     override fun onInterrupt() = endSession()

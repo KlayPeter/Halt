@@ -38,7 +38,7 @@ class GuardianService : Service() {
 
         val notification = NotificationCompat.Builder(this, GuardNotifications.CHANNEL_PROGRESS)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("打住 · 守护中")
+            .setContentTitle("Halt · 守护中")
             .setContentText("额度和拦截正在生效")
             .setOngoing(true)
             .setSilent(true)

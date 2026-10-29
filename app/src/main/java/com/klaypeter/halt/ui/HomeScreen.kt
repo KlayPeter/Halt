@@ -259,7 +259,7 @@ private fun PermissionGuide(onRequestPermission: () -> Unit) {
         )
         Spacer(Modifier.height(22.dp))
         GuideStep("1", "点下面的按钮，跳到系统设置")
-        GuideStep("2", "在列表里找到「打住」")
+        GuideStep("2", "在列表里找到「Halt」")
         GuideStep("3", "打开开关，按返回键回来")
         Spacer(Modifier.height(26.dp))
         Button(

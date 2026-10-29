@@ -42,7 +42,7 @@ class GuardHealthWorker(
             if (now - lastAlert > 60 * 60_000L) {
                 prefs.edit().putLong(KEY_LAST_ALERT, now).apply()
                 Notifier(context).alert(
-                    "打住的守护已经停止",
+                    "Halt 的守护已经停止",
                     "无障碍服务被关闭了（通常是系统省电策略干的），额度现在不会生效。点一下重新开启。"
                 )
             }

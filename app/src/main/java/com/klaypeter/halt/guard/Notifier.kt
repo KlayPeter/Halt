@@ -65,7 +65,7 @@ class Notifier(private val context: Context) {
         if (!manager.areNotificationsEnabled()) return
         val notification = NotificationCompat.Builder(context, GuardNotifications.CHANNEL_PROGRESS)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("打住 · 守护中")
+            .setContentTitle("Halt · 守护中")
             .setContentText(text)
             .setOngoing(true)
             .setOnlyAlertOnce(true)

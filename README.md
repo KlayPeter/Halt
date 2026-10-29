@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 <img src="docs/logo.svg" width="96" alt="Halt">
 
@@ -208,7 +208,7 @@ echo "sdk.dir=/path/to/Android/Sdk" > local.properties
 # 产物：app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Windows 上可以用仓库里的脚本（路径按自己机器改）：
+Windows 上可以直接用仓库里的脚本（会自动从 `ANDROID_HOME` 或 `local.properties` 找 SDK）：
 
 ```bat
 build.bat      :: 只编译
