@@ -15,15 +15,26 @@ data class UpdateInfo(
 )
 
 /**
- * 从 GitHub Release 检查更新。
+ * 检查更新。
  *
- * 没有后端，直接读仓库的 latest release。6 小时内不重复请求；
- * 失败就静默 —— 网络不好不该影响 App 正常用。
+ * 默认读 GitHub 的 latest release。国内网络经常连不上 github.com，
+ * 所以留了一个「自建镜像」的位置：填上 MIRROR_MANIFEST_URL 就优先走它。
+ *
+ * 镜像清单格式（一个静态 JSON 就行，放哪都可以）：
+ * {
+ *   "version": "0.1.6",
+ *   "apk": "https://your-host/Halt-v0.1.6.apk",
+ *   "notes": "可选"
+ * }
  */
 object UpdateChecker {
 
     private const val TAG = "UpdateChecker"
-    private const val API = "https://api.github.com/repos/KlayPeter/Halt/releases/latest"
+    private const val GITHUB_API = "https://api.github.com/repos/KlayPeter/Halt/releases/latest"
+
+    /** 留空 = 只用 GitHub。填了就先试镜像，失败再回落 GitHub。 */
+    private const val MIRROR_MANIFEST_URL = ""
+
     private const val PREFS = "app"
     private const val KEY_CHECKED_AT = "update_checked_at"
     private const val KEY_CACHED_TAG = "update_cached_tag"
@@ -72,19 +83,37 @@ object UpdateChecker {
         }
 
     private fun fetch(): UpdateInfo? {
-        return try {
-            val conn = URL(API).openConnection() as HttpURLConnection
-            conn.connectTimeout = 8_000
-            conn.readTimeout = 8_000
-            conn.setRequestProperty("Accept", "application/vnd.github+json")
-            conn.setRequestProperty("User-Agent", "Halt-Android")
-            val body = conn.inputStream.bufferedReader().use { it.readText() }
-            conn.disconnect()
+        if (MIRROR_MANIFEST_URL.isNotBlank()) {
+            fetchFromMirror(MIRROR_MANIFEST_URL)?.let {
+                Log.d(TAG, "从镜像拿到版本 ${it.version}")
+                return it
+            }
+            Log.d(TAG, "镜像不可用，回落 GitHub")
+        }
+        return fetchFromGitHub()
+    }
 
-            val json = JSONObject(body)
-            val tag = json.optString("tag_name")
-            if (tag.isBlank()) return null
+    private fun fetchFromMirror(manifestUrl: String): UpdateInfo? = try {
+        val body = request(manifestUrl)
+        val json = JSONObject(body)
+        val version = json.optString("version")
+        val apk = json.optString("apk")
+        if (version.isBlank() || apk.isBlank()) {
+            null
+        } else {
+            UpdateInfo(version, apk, json.optString("notes"))
+        }
+    } catch (t: Throwable) {
+        Log.w(TAG, "镜像清单读取失败: ${t.javaClass.simpleName}")
+        null
+    }
 
+    private fun fetchFromGitHub(): UpdateInfo? = try {
+        val json = JSONObject(request(GITHUB_API))
+        val tag = json.optString("tag_name")
+        if (tag.isBlank()) {
+            null
+        } else {
             var download = json.optString("html_url")
             val assets = json.optJSONArray("assets")
             if (assets != null && assets.length() > 0) {
@@ -92,9 +121,23 @@ object UpdateChecker {
                 if (first.isNotBlank()) download = first
             }
             UpdateInfo(version = tag, downloadUrl = download, notes = json.optString("body"))
-        } catch (t: Throwable) {
-            Log.w(TAG, "检查更新失败: ${t.javaClass.simpleName} ${t.message}")
-            null
+        }
+    } catch (t: Throwable) {
+        Log.w(TAG, "检查更新失败: ${t.javaClass.simpleName} ${t.message}")
+        null
+    }
+
+    private fun request(url: String): String {
+        val conn = URL(url).openConnection() as HttpURLConnection
+        conn.connectTimeout = 8_000
+        conn.readTimeout = 8_000
+        conn.instanceFollowRedirects = true
+        conn.setRequestProperty("Accept", "application/vnd.github+json")
+        conn.setRequestProperty("User-Agent", "Halt-Android")
+        return try {
+            conn.inputStream.bufferedReader().use { it.readText() }
+        } finally {
+            conn.disconnect()
         }
     }
 

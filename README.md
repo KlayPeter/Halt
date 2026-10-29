@@ -221,6 +221,30 @@ install.bat    :: 编译 + 装到手机 + 重绑无障碍
 
 ---
 
+---
+
+## 更新机制
+
+点「立即更新」→ 应用内下载 APK（带进度）→ 自动调起系统安装器。不跳浏览器，也不需要重装时重新登录什么。
+
+默认从 GitHub Release 读版本号。**国内网络通常连不上 `github.com`**（8 秒超时后静默放弃），这时额度页底部的「检查更新」可以直接打开网页版。
+
+### 接一个自己的镜像源
+
+`UpdateChecker.kt` 里留了一个空位：
+
+```kotlin
+private const val MIRROR_MANIFEST_URL = ""
+```
+
+填上一个能返回这段 JSON 的地址即可，会优先于 GitHub 使用：
+
+```json
+{ "version": "0.1.6", "apk": "https://your-host/Halt-v0.1.6.apk" }
+```
+
+**不需要服务器。** 任何静态托管都行 —— Gitee 建个公开仓库，把 APK 和这个 `update.json` 传上去，用 raw 地址就好。
+
 ## 已知限制
 
 诚实地说清楚边界：

@@ -185,7 +185,7 @@ class MainActivity : ComponentActivity() {
 
             downloadProgress = null
             if (apk == null) {
-                android.widget.Toast.makeText(this@MainActivity, "下载失败，检查一下网络", android.widget.Toast.LENGTH_LONG).show()
+                android.widget.Toast.makeText(this@MainActivity, "下载失败：网络到不了 GitHub。用数据线跑 install.bat，或到项目页手动下载", android.widget.Toast.LENGTH_LONG).show()
                 return@launch
             }
             runCatching { UpdateInstaller.install(this@MainActivity, apk) }
