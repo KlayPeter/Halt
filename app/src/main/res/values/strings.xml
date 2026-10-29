@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Halt</string>
+
+    <string name="guard_service_label">Halt</string>
+    <string name="accessibility_description">用于实时识别当前正在使用的应用。当你在 App 里为某个应用设定了使用额度，额度用完后会提醒并退出该应用。只读取「当前是哪个应用」，不读取屏幕内容。</string>
+    <string name="accessibility_summary">实时识别当前应用，兑现使用额度</string>
+
+    <string name="notif_channel_guard">额度提醒</string>
+    <string name="notif_channel_desc">额度即将用完、已用完时的提醒</string>
+</resources>
