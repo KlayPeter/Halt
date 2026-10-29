@@ -1,4 +1,4 @@
-﻿package com.klaypeter.halt.enforcement
+package com.klaypeter.halt.enforcement
 
 import com.klaypeter.halt.data.Allowance
 
@@ -56,7 +56,7 @@ object Enforcer {
         if (pkg in input.ignoredPackages || pkg in input.neverBlockPackages) return Decision.Allow
 
         val allowance = input.allowances[pkg] ?: return Decision.Allow
-        val budget = allowance.budgetMs
+        val budget = allowance.allowedMs
         if (budget <= 0L) return Decision.Allow
 
         val used = usedMs(input, allowance)

@@ -1,4 +1,4 @@
-﻿package com.klaypeter.halt.data
+package com.klaypeter.halt.data
 
 import android.app.AppOpsManager
 import android.app.usage.UsageEvents
@@ -132,6 +132,14 @@ class UsageRepository(private val context: Context) {
 
         return DayUsage(dayStart, apps.sumOf { it.totalMs }, apps)
     }
+
+    /**
+     * 今天每个应用用了多久（包名 -> 毫秒）。
+     * 「今日」页和「额度」页都读它，保证口径一致。
+     */
+    fun todayUsageByPackage(now: Long = System.currentTimeMillis()): Map<String, Long> =
+        runCatching { loadToday(now).apps.associate { it.packageName to it.totalMs } }
+            .getOrDefault(emptyMap())
 
     private data class Session(
         val packageName: String,

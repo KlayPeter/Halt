@@ -1,4 +1,4 @@
-﻿package com.klaypeter.halt.ui
+package com.klaypeter.halt.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,13 +38,14 @@ fun MainScreen(
     initialTab: Int = 0,
     usageState: UiState,
     allowances: List<Allowance>,
+    todayUsage: Map<String, Long>,
     perm: PermState,
     apps: List<InstalledApp>,
     onRefreshUsage: () -> Unit,
     onRequestUsagePermission: () -> Unit,
     onLoadApps: () -> Unit,
     onSaveAllowance: (String, String, Long) -> Unit,
-    onResetAllowance: (String) -> Unit,
+    onGrantAllowance: (String) -> Unit,
     onDeleteAllowance: (String) -> Unit,
     onOpenAccessibility: () -> Unit,
     onOpenOverlay: () -> Unit,
@@ -64,11 +65,12 @@ fun MainScreen(
                 } else {
                     QuotaTab(
                         allowances = allowances,
+                        todayUsage = todayUsage,
                         perm = perm,
                         apps = apps,
                         onLoadApps = onLoadApps,
                         onSave = onSaveAllowance,
-                        onReset = onResetAllowance,
+                        onGrant = onGrantAllowance,
                         onDelete = onDeleteAllowance,
                         onOpenAccessibility = onOpenAccessibility,
                         onOpenOverlay = onOpenOverlay,

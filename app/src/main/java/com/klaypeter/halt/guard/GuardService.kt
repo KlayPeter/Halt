@@ -1,4 +1,4 @@
-﻿package com.klaypeter.halt.guard
+package com.klaypeter.halt.guard
 
 import android.accessibilityservice.AccessibilityService
 import android.app.ActivityManager
@@ -20,6 +20,7 @@ import com.klaypeter.halt.BuildConfig
 import com.klaypeter.halt.MainActivity
 import com.klaypeter.halt.data.Allowance
 import com.klaypeter.halt.data.GuardRepository
+import com.klaypeter.halt.data.UsageRepository
 import com.klaypeter.halt.enforcement.BlockReason
 import com.klaypeter.halt.enforcement.Decision
 import com.klaypeter.halt.enforcement.Enforcer
@@ -27,6 +28,9 @@ import com.klaypeter.halt.enforcement.GuardInput
 import com.klaypeter.halt.enforcement.GuardianService
 import com.klaypeter.halt.util.formatClock
 import com.klaypeter.halt.util.formatDuration
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -66,6 +70,11 @@ class GuardService : AccessibilityService() {
     private lateinit var notifier: Notifier
     private lateinit var overlay: OverlayController
     private lateinit var banner: BannerOverlay
+
+    private val usageRepository by lazy { UsageRepository(applicationContext) }
+
+    /** 系统统计到的今日时长（包名 -> 毫秒），每 2 秒刷一次，作为「已用」的真值。 */
+    private var statsCache: Map<String, Long> = emptyMap()
 
     private var allowances: Map<String, Allowance> = emptyMap()
 
@@ -137,7 +146,44 @@ class GuardService : AccessibilityService() {
         registerReceiver(userPresentReceiver, IntentFilter(Intent.ACTION_USER_PRESENT))
 
         startHealthPoll()
+        startUsagePoll()
         Log.d(TAG, "onServiceConnected 完成")
+    }
+
+    /** 每 2 秒拿一次系统统计，和「今日」页共用同一个数据源。 */
+    private fun startUsagePoll() {
+        scope.launch {
+            while (isActive) {
+                runCatching {
+                    statsCache = withContext(Dispatchers.IO) { usageRepository.todayUsageByPackage() }
+                }
+                delay(2_000)
+            }
+        }
+    }
+
+    /**
+     * 跨天重置 + 用系统统计回填已用时长。
+     * 库里自算的数字和系统统计对不上时，一律以系统为准 —— 不然「今日」页和「额度」页会互相打脸。
+     */
+    private fun rolloverAndSeed(pkg: String, allowance: Allowance): Allowance {
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        var updated = allowance
+
+        if (updated.dayKey != today) {
+            updated = updated.copy(usedMs = 0L, grantedMs = 0L, dayKey = today)
+            Log.d(TAG, "跨天重置 $pkg")
+            scope.launch { repository.rollover(pkg, today) }
+        }
+
+        val statsUsed = statsCache[pkg] ?: 0L
+        if (statsUsed > updated.usedMs) {
+            updated = updated.copy(usedMs = statsUsed)
+            scope.launch { repository.setUsed(pkg, statsUsed) }
+        }
+
+        if (updated != allowance) allowances = allowances + (pkg to updated)
+        return updated
     }
 
     /**
@@ -212,7 +258,8 @@ class GuardService : AccessibilityService() {
         if (pkg == session?.packageName) return
         endSession()
 
-        val allowance = allowances[pkg] ?: return
+        val raw = allowances[pkg] ?: return
+        val allowance = rolloverAndSeed(pkg, raw)
         val decision = Enforcer.decide(buildInput(pkg, sessionStart = null))
         Log.d(TAG, "进入 $pkg used=${allowance.usedMs}/${allowance.budgetMs} decision=$decision")
 
@@ -259,7 +306,7 @@ class GuardService : AccessibilityService() {
 
         val input = buildInput(current.packageName, sessionStart = current.startElapsed)
         val used = Enforcer.usedMs(input, allowance)
-        val budget = allowance.budgetMs
+        val budget = allowance.allowedMs
         val remaining = budget - used
 
         notifier.showProgress(

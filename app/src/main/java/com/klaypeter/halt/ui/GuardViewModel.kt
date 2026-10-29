@@ -1,4 +1,4 @@
-﻿package com.klaypeter.halt.ui
+package com.klaypeter.halt.ui
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -24,6 +24,8 @@ data class PermState(
 ) {
     val allOk: Boolean get() = accessibility && overlay && notifications
 }
+
+private const val GRANT_MS = 15 * 60_000L
 
 class GuardViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -60,8 +62,9 @@ class GuardViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun reset(packageName: String) {
-        viewModelScope.launch { repository.resetUsed(packageName) }
+    /** 输密码后加 15 分钟，等价于「解锁」。 */
+    fun grant(packageName: String) {
+        viewModelScope.launch { repository.grant(packageName, GRANT_MS) }
     }
 
     fun delete(packageName: String) {

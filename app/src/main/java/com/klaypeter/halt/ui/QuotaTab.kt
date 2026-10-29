@@ -1,4 +1,4 @@
-﻿package com.klaypeter.halt.ui
+package com.klaypeter.halt.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -53,11 +53,12 @@ import com.klaypeter.halt.util.loadAppIcon
 @Composable
 fun QuotaTab(
     allowances: List<Allowance>,
+    todayUsage: Map<String, Long>,
     perm: PermState,
     apps: List<InstalledApp>,
     onLoadApps: () -> Unit,
     onSave: (String, String, Long) -> Unit,
-    onReset: (String) -> Unit,
+    onGrant: (String) -> Unit,
     onDelete: (String) -> Unit,
     onOpenAccessibility: () -> Unit,
     onOpenOverlay: () -> Unit,
@@ -181,8 +182,10 @@ fun QuotaTab(
         items(allowances, key = { it.packageName }) { allowance ->
             QuotaCard(
                 allowance = allowance,
-                onReset = {
-                    pendingAction = { onReset(allowance.packageName) }
+                usedMs = maxOf(allowance.usedMs, todayUsage[allowance.packageName] ?: 0L),
+                allowedMs = allowance.allowedMs,
+                onGrant = {
+                    pendingAction = { onGrant(allowance.packageName) }
                 },
                 onDelete = {
                     pendingAction = { onDelete(allowance.packageName) }
@@ -208,15 +211,17 @@ fun QuotaTab(
 @Composable
 private fun QuotaCard(
     allowance: Allowance,
-    onReset: () -> Unit,
+    usedMs: Long,
+    allowedMs: Long,
+    onGrant: () -> Unit,
     onDelete: () -> Unit
 ) {
     val context = LocalContext.current
     val icon = remember(allowance.packageName) { loadAppIcon(context, allowance.packageName) }
-    val exhausted = allowance.exhausted
+    val exhausted = usedMs >= allowedMs
     val accent = if (exhausted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-    val share = if (allowance.budgetMs > 0) {
-        (allowance.usedMs.toFloat() / allowance.budgetMs).coerceIn(0f, 1f)
+    val share = if (allowedMs > 0) {
+        (usedMs.toFloat() / allowedMs).coerceIn(0f, 1f)
     } else {
         0f
     }
@@ -259,13 +264,13 @@ private fun QuotaCard(
                     Spacer(Modifier.height(8.dp))
                     Row {
                         Text(
-                            "已用 ${formatDuration(allowance.usedMs)}",
+                            "已用 ${formatDuration(usedMs)}",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
-                            "额度 ${formatDuration(allowance.budgetMs)}",
+                            "可用 ${formatDuration(allowedMs)}",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -281,7 +286,7 @@ private fun QuotaCard(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            ringText(allowance.remainingMs),
+                            ringText((allowedMs - usedMs).coerceAtLeast(0L)),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = accent
@@ -301,8 +306,8 @@ private fun QuotaCard(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = onReset) {
-                    Text("重置", fontSize = 13.sp)
+                TextButton(onClick = onGrant) {
+                    Text("＋15 分钟", fontSize = 13.sp)
                 }
                 TextButton(onClick = onDelete) {
                     Text(

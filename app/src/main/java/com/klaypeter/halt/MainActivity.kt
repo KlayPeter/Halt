@@ -1,4 +1,4 @@
-﻿package com.klaypeter.halt
+package com.klaypeter.halt
 
 import android.content.Intent
 import android.os.Bundle
@@ -13,6 +13,7 @@ import androidx.work.WorkManager
 import com.klaypeter.halt.enforcement.GuardianService
 import com.klaypeter.halt.guard.GuardHealthWorker
 import com.klaypeter.halt.ui.GuardViewModel
+import com.klaypeter.halt.ui.UiState
 import com.klaypeter.halt.ui.MainScreen
 import com.klaypeter.halt.ui.UsageViewModel
 import com.klaypeter.halt.ui.theme.ScreenTimeTheme
@@ -43,17 +44,24 @@ class MainActivity : ComponentActivity() {
                 val perm by guardViewModel.perm.collectAsStateWithLifecycle()
                 val apps by guardViewModel.apps.collectAsStateWithLifecycle()
 
+                // 「今日」页和「额度」页共用同一份系统统计
+                val todayUsage = (usageState as? UiState.Ready)
+                    ?.usage?.apps
+                    ?.associate { it.packageName to it.totalMs }
+                    ?: emptyMap()
+
                 MainScreen(
                     initialTab = initialTab,
                     usageState = usageState,
                     allowances = allowances,
+                    todayUsage = todayUsage,
                     perm = perm,
                     apps = apps,
                     onRefreshUsage = usageViewModel::refresh,
                     onRequestUsagePermission = usageViewModel::openPermissionSettings,
                     onLoadApps = guardViewModel::loadApps,
                     onSaveAllowance = guardViewModel::save,
-                    onResetAllowance = guardViewModel::reset,
+                    onGrantAllowance = guardViewModel::grant,
                     onDeleteAllowance = guardViewModel::delete,
                     onOpenAccessibility = guardViewModel::openAccessibility,
                     onOpenOverlay = guardViewModel::openOverlay,
