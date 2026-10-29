@@ -7,3 +7,14 @@ build/
 captures/
 .externalNativeBuild/
 .cxx/
+
+# 签名材料绝不入库
+.keystore/
+*.jks
+*.keystore
+keystore.properties
+
+# 临时文件
+.refs/
+_references/
+*.hprof

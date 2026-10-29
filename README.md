@@ -1,18 +1,41 @@
 <div align="center">
 
+<img src="docs/logo.svg" width="96" alt="Halt">
+
 # Halt · 打住
 
-**给自己定一个额度，用完就真的进不去了。**
+**给某个 App 定一个额度，用完就真的进不去了。**
 
 一个用无障碍服务做实时拦截的 Android 自律工具 —— 不是提醒你，是把你踢出去。
 
+[![Platform](https://img.shields.io/badge/platform-Android%20only-3DDC84?logo=android&logoColor=white)](#-只支持-android)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)](#)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)](#)
-[![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)](#)
-[![minSdk](https://img.shields.io/badge/minSdk-26-black)](#)
-[![License](https://img.shields.io/badge/License-MIT-blue)](#)
+[![Compose](https://img.shields.io/badge/Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)](#)
+[![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+
+<a href="../../releases/latest"><img src="https://img.shields.io/badge/⬇_下载_APK-v0.1.0-6C5CE7?style=for-the-badge" alt="下载 APK" height="36"></a>
+
+<sub>6.6 MB · Android 8.0+ · 无需 Google 服务</sub>
 
 </div>
+
+---
+
+## ⚠️ 只支持 Android
+
+这一点必须先说清楚，因为它决定了这个项目能不能解决你的问题：
+
+| | iOS | Android |
+|---|---|---|
+| 读取其他 App 的使用时长 | ❌ 做不到 | ✅ `UsageStatsManager` |
+| 知道"现在前台是哪个 App" | ❌ 做不到 | ✅ 无障碍服务 |
+| 到点把 App 拦下来 | ⚠️ 只能靠系统自己的「屏幕使用时间」限额 | ✅ 可以 |
+| 自定义额度 / 重置密码 / 倒计时横幅 | ❌ | ✅ |
+
+**iPhone 上做不了。** iOS 的 Screen Time 框架（`FamilyControls` / `DeviceActivity`）只允许系统自己渲染报告，第三方 App 既读不到明细，也没法主动拦别的 App。越狱插件除外。
+
+所以 Halt 是 Android 专属的。
 
 ---
 
@@ -30,9 +53,9 @@
 
 <table>
 <tr>
-<td align="center"><img src="docs/today.png" width="300"><br><sub>今天用了多久</sub></td>
-<td align="center"><img src="docs/quota.png" width="300"><br><sub>额度自己填</sub></td>
-<td align="center"><img src="docs/banner.png" width="300"><br><sub>倒计时胶囊，盖在任何 App 上</sub></td>
+<td align="center"><img src="docs/today.png" width="290"><br><sub>今天用了多久</sub></td>
+<td align="center"><img src="docs/quota.png" width="290"><br><sub>额度自己填</sub></td>
+<td align="center"><img src="docs/banner.png" width="290"><br><sub>倒计时胶囊，盖在任何 App 上</sub></td>
 </tr>
 </table>
 
@@ -58,6 +81,51 @@
 | 📊 **今日统计** | 每个 App 用了多久、打开几次，彩色分布条一眼看清 |
 | 🛡 **自恢复** | 会话时间落盘，进程被杀后补记；服务被关会主动通知你 |
 | 🌙 **深色模式** | 跟着系统走 |
+
+---
+
+## 下载安装
+
+**不想编译？直接下 APK：**
+
+[**⬇ Halt-v0.1.0.apk**](https://github.com/KlayPeter/Halt/releases/download/v0.1.0/Halt-v0.1.0.apk) · 6.6 MB · 已签名
+
+1. 手机上下载这个 APK，允许「安装未知来源应用」
+2. 打开 Halt → 「额度」页 → 按提示开三个权限（见下一节）
+3. 设置 4 位密码 → 点「＋ 添加额度」→ 选 App、填分钟数
+
+<details>
+<summary>校验签名（可选）</summary>
+
+```
+SHA-256: 98739ababb4d7313d3f6097ec19c83b709aad91d7cf357a8b0fdc08b8bab53f3
+```
+
+</details>
+
+---
+
+## 开启权限（最关键的一步）
+
+打开 Halt → 「额度」页 → 顶部会提示还差什么。
+
+**① 无障碍服务**
+
+```
+设置 → 无障碍 → 已下载的应用 → Halt → 打开
+```
+
+系统会弹「开启服务将会：查看和控制屏幕…」，**必须点「允许」**，不点等于没开。
+
+<div align="center"><img src="docs/accessibility.png" width="300"><br><sub>找「Halt」，下面那行小字是「实时识别当前应用，兑现使用额度」</sub></div>
+
+**② 显示在其他应用上层**：设置 → 应用 → Halt → 特殊权限 → 悬浮窗
+
+**③ 通知**：系统弹窗点允许即可
+
+三个都开了，额度页的红色提示卡才会消失。
+
+> **为什么非要无障碍？** 因为普通应用拿不到「现在前台是哪个 App」，`UsageStatsManager` 只能给事后统计，做不到当场拦下来。PIN、看数据、设额度都不需要它 —— 不开的话，Halt 只是一个统计工具。
 
 ---
 
@@ -112,11 +180,7 @@ security/              PIN：PBKDF2 + 随机盐
 ui/                    Compose：今日 / 额度 / 密码盘
 ```
 
-### 为什么必须要无障碍
-
-这是绕不过去的：**普通 Android 应用拿不到「现在前台是哪个 App」**，除了无障碍服务。
-
-`UsageStatsManager` 能给你事后统计，但做不到「当场拦下来」。所以四个权限各管一件事：
+### 四个权限各管一件事
 
 | 权限 | 只负责 |
 |---|---|
@@ -125,19 +189,13 @@ ui/                    Compose：今日 / 额度 / 密码盘
 | 悬浮窗 | 遮罩和倒计时胶囊 |
 | 通知 | 预警和常驻状态 |
 
-**PIN、看数据、设额度，都不需要无障碍。** 不开它，Halt 就是一个统计工具。
-
 ---
 
-## 上手
-
-### 环境
+## 从源码构建
 
 - JDK 17+
 - Android SDK（Platform 34 + Build-Tools 34）
 - 手机 Android 8.0+
-
-### 构建
 
 ```bash
 git clone https://github.com/KlayPeter/Halt.git
@@ -150,47 +208,14 @@ echo "sdk.dir=/path/to/Android/Sdk" > local.properties
 # 产物：app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Windows 上可以直接用仓库里的脚本（路径按自己机器改一下）：
+Windows 上可以用仓库里的脚本（路径按自己机器改）：
 
 ```bat
 build.bat      :: 只编译
 install.bat    :: 编译 + 装到手机 + 重绑无障碍
 ```
 
-### 装到手机上
-
-1. 打开开发者选项，**USB 调试**和**USB 安装**都打开
-2. 数据线连电脑，手机点「允许」；**屏幕要亮着解锁**，否则 adb 装不上
-3. 跑 `install.bat`，或 `adb install -r app-debug.apk`
-
-> 小米/红米报 `INSTALL_FAILED_USER_RESTRICTED`，就是上面两个开关没开。
-
-### 开启权限（最关键的一步）
-
-打开 Halt → 「额度」页 → 顶部会提示还差什么。
-
-**① 无障碍服务**
-
-```
-设置 → 无障碍 → 已下载的应用 → Halt → 打开
-```
-
-系统会弹「开启服务将会：查看和控制屏幕…」，**必须点「允许」**，不点等于没开。
-
-<div align="center"><img src="docs/accessibility.png" width="300"><br><sub>找「Halt」，下面那行小字是「实时识别当前应用，兑现使用额度」</sub></div>
-
-**② 显示在其他应用上层**：设置 → 应用 → Halt → 特殊权限 → 悬浮窗
-
-**③ 通知**：系统弹窗点允许即可
-
-三个都开了，额度页的红色提示卡才会消失。
-
-### 用起来
-
-1. 点「设置密码」，设一个 4 位数（重置额度时要输）
-2. 点「＋ 添加额度」，搜应用名，填分钟数
-3. 正常用那个 App，顶部会挂着倒计时
-4. 额度完了，就被踢出来了
+> 小米/红米报 `INSTALL_FAILED_USER_RESTRICTED`，是开发者选项里的「USB 安装」没开；另外 **adb 安装时手机必须亮屏解锁**。
 
 ---
 
@@ -210,6 +235,7 @@ install.bat    :: 编译 + 装到手机 + 重绑无障碍
 - [x] PIN 保护重置
 - [x] 进程被杀后的时长补记
 - [x] 服务自检 + 开机自启
+- [x] 签名 APK / Release
 - [ ] 额度按天自动重置
 - [ ] 指纹解锁（BiometricPrompt）
 - [ ] 完成任务 → 回来兑换额度（`grantedMinutes`）
@@ -223,7 +249,7 @@ Kotlin · Jetpack Compose (Material 3) · Room · WorkManager · Coroutines
 
 ## License
 
-MIT。你想怎么改都行。
+[MIT](LICENSE) © 2026 KlayPeter
 
 ---
 
