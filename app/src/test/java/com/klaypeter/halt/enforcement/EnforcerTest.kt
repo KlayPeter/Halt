@@ -1,4 +1,4 @@
-﻿package com.klaypeter.halt.enforcement
+package com.klaypeter.halt.enforcement
 
 import com.klaypeter.halt.data.Allowance
 import org.junit.Assert.assertEquals
@@ -39,7 +39,7 @@ class EnforcerTest {
     @Test
     fun `额度没用完放行`() {
         val decision = Enforcer.decide(
-            input(usedMs = 5 * 60_000L, sessionStart = 9_000_000L)
+            input(usedMs = 5 * 60_000L, sessionStart = 10_000_000L - 60_000L)
         )
         assertTrue(decision is Decision.Allow)
     }
@@ -54,26 +54,22 @@ class EnforcerTest {
     }
 
     @Test
-    fun `到点后在宽限期内不拦`() {
+    fun `正在用到点也立刻拦，不给宽限`() {
         val now = 10_000_000L
         val decision = Enforcer.decide(
             input(usedMs = 20 * 60_000L, sessionStart = now - 60_000L, now = now)
         )
-        assertTrue(decision is Decision.Allow)
+        assertTrue(decision is Decision.Block)
+        assertEquals(BlockReason.TIME_UP, (decision as Decision.Block).reason)
     }
 
     @Test
-    fun `宽限也用完就拦`() {
+    fun `差一秒还放行`() {
         val now = 10_000_000L
         val decision = Enforcer.decide(
-            input(
-                usedMs = 20 * 60_000L,
-                sessionStart = now - (Enforcer.GRACE_MS + 1_000L),
-                now = now
-            )
+            input(usedMs = 20 * 60_000L - 2_000L, sessionStart = now - 1_000L, now = now)
         )
-        assertTrue(decision is Decision.Block)
-        assertEquals(BlockReason.GRACE_EXPIRED, (decision as Decision.Block).reason)
+        assertTrue(decision is Decision.Allow)
     }
 
     @Test

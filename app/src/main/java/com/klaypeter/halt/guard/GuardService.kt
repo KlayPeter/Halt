@@ -150,14 +150,23 @@ class GuardService : AccessibilityService() {
         Log.d(TAG, "onServiceConnected 完成")
     }
 
-    /** 每 2 秒拿一次系统统计，和「今日」页共用同一个数据源。 */
+    /** 每秒拿一次系统统计，和「今日」页共用同一个数据源。 */
     private fun startUsagePoll() {
         scope.launch {
+            var tick = 0
             while (isActive) {
                 runCatching {
                     statsCache = withContext(Dispatchers.IO) { usageRepository.todayUsageByPackage() }
                 }
-                delay(2_000)
+                // 每 10 秒顺便查一次系统时间有没有被改（改日期会让「今天」归零）
+                if (tick % 10 == 0 && ClockGuard.check(this@GuardService)) {
+                    notifier.alert(
+                        "检测到系统时间被修改",
+                        "改日期不会让额度回满。额度按真实用掉的时间算。"
+                    )
+                }
+                tick++
+                delay(1_000)
             }
         }
     }
@@ -417,7 +426,7 @@ class GuardService : AccessibilityService() {
     private fun block(allowance: Allowance, decision: Decision.Block) {
         val reason = when (decision.reason) {
             BlockReason.EXHAUSTED -> "额度用完了，先去做点别的吧"
-            BlockReason.GRACE_EXPIRED -> "已经超出宽限时间，先离开一下"
+            BlockReason.TIME_UP -> "时间到了，说好多少就是多少"
         }
         Log.d(TAG, "block ${allowance.packageName} reason=${decision.reason}")
 

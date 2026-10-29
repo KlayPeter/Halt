@@ -81,10 +81,10 @@ class MainActivity : ComponentActivity() {
     private fun readTab(intent: Intent?): Int =
         intent?.getIntExtra(EXTRA_TAB, TAB_TODAY) ?: TAB_TODAY
 
-    /** 每 15 分钟自检一次：无障碍被系统关掉了要能通知到用户。 */
+    /** 每 5 分钟自检一次：无障碍被系统关掉了要能通知到用户。 */
     private fun scheduleHealthCheck() {
-        val request = PeriodicWorkRequestBuilder<GuardHealthWorker>(15, TimeUnit.MINUTES)
-            .setInitialDelay(15, TimeUnit.MINUTES)
+        val request = PeriodicWorkRequestBuilder<GuardHealthWorker>(5, TimeUnit.MINUTES)
+            .setInitialDelay(5, TimeUnit.MINUTES)
             .build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             GuardHealthWorker.WORK_NAME,

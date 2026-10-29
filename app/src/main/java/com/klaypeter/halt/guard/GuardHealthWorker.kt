@@ -1,4 +1,4 @@
-﻿package com.klaypeter.halt.guard
+package com.klaypeter.halt.guard
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
@@ -6,6 +6,7 @@ import android.view.accessibility.AccessibilityManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.klaypeter.halt.data.AppDatabase
+import com.klaypeter.halt.data.UsageRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -27,6 +28,18 @@ class GuardHealthWorker(
             runCatching { AppDatabase.get(context).allowanceDao().count() }.getOrDefault(0) > 0
         }
         if (!hasAllowance) return Result.success()
+
+        // 没有「使用情况访问」就算不出用了多久，额度会永远不生效
+        val usageOk = withContext(Dispatchers.IO) {
+            runCatching { UsageRepository(context).hasUsageAccess() }.getOrDefault(true)
+        }
+        if (!usageOk) {
+            Notifier(context).alert(
+                "使用情况访问被关了",
+                "没有它 Halt 算不出用了多久，额度不会生效。点一下重新开启。"
+            )
+            return Result.success()
+        }
 
         val manager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
             ?: return Result.success()

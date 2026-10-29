@@ -6,8 +6,8 @@ enum class BlockReason {
     /** 额度已经用完了，这次是重新点进来。 */
     EXHAUSTED,
 
-    /** 到点之后又玩了超过宽限时间。 */
-    GRACE_EXPIRED
+    /** 正在用，时间到了。 */
+    TIME_UP
 }
 
 sealed interface Decision {
@@ -46,8 +46,11 @@ data class GuardInput(
  */
 object Enforcer {
 
-    /** 到点之后再宽限 5 分钟，然后强退。 */
-    const val GRACE_MS = 5 * 60_000L
+    /**
+     * 宽限时间。这里是 0：说好 10 分钟就是 10 分钟，到点立刻停。
+     * （以前给 5 分钟缓冲，等于承诺 15 分钟。）
+     */
+    const val GRACE_MS = 0L
 
     const val WARN_BEFORE_MS = 5 * 60_000L
 
@@ -61,17 +64,15 @@ object Enforcer {
 
         val used = usedMs(input, allowance)
 
-        return when {
-            // 正在用，且已经超过宽限 → 强退
-            used >= budget + GRACE_MS ->
-                Decision.Block(pkg, BlockReason.GRACE_EXPIRED, used, budget)
+        if (used < budget) return Decision.Allow
 
-            // 没在计时却已经超额 → 说明是重新点进来的，直接拦
-            input.sessionStartElapsedMs == null && used >= budget ->
-                Decision.Block(pkg, BlockReason.EXHAUSTED, used, budget)
-
-            else -> Decision.Allow
-        }
+        // 到点就停，不留缓冲
+        return Decision.Block(
+            pkg,
+            if (input.sessionStartElapsedMs == null) BlockReason.EXHAUSTED else BlockReason.TIME_UP,
+            used,
+            budget
+        )
     }
 
     /** 已用时长 = 库里累计的 + 本次会话至今。 */
