@@ -1,6 +1,9 @@
 package com.klaypeter.halt.updater
 
 import android.content.Context
+import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -14,11 +17,12 @@ data class UpdateInfo(
 /**
  * 从 GitHub Release 检查更新。
  *
- * 没有后端，直接读仓库的 latest release。6 小时内不重复请求，
+ * 没有后端，直接读仓库的 latest release。6 小时内不重复请求；
  * 失败就静默 —— 网络不好不该影响 App 正常用。
  */
 object UpdateChecker {
 
+    private const val TAG = "UpdateChecker"
     private const val API = "https://api.github.com/repos/KlayPeter/Halt/releases/latest"
     private const val PREFS = "app"
     private const val KEY_CHECKED_AT = "update_checked_at"
@@ -26,64 +30,73 @@ object UpdateChecker {
     private const val KEY_CACHED_URL = "update_cached_url"
     private const val CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
 
-    fun cachedVersion(context: Context): String? {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_CACHED_TAG, null)
-    }
-
-    fun cachedUrl(context: Context): String? {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_CACHED_URL, null)
-    }
+    fun cachedVersion(context: Context): String? =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(KEY_CACHED_TAG, null)
 
     /** 返回 null 表示「没有更新」或「查不到」。 */
-    suspend fun check(context: Context, currentVersion: String): UpdateInfo? {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val now = System.currentTimeMillis()
-        val lastChecked = prefs.getLong(KEY_CHECKED_AT, 0L)
+    suspend fun check(context: Context, currentVersion: String): UpdateInfo? =
+        withContext(Dispatchers.IO) {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val now = System.currentTimeMillis()
+            val lastChecked = prefs.getLong(KEY_CHECKED_AT, 0L)
 
-        var tag: String?
-        var url: String?
+            val tag: String?
+            val url: String?
 
-        if (now - lastChecked < CHECK_INTERVAL_MS) {
-            tag = prefs.getString(KEY_CACHED_TAG, null)
-            url = prefs.getString(KEY_CACHED_URL, null)
-        } else {
-            val info = fetch()
-            prefs.edit()
-                .putLong(KEY_CHECKED_AT, now)
-                .putString(KEY_CACHED_TAG, info?.version)
-                .putString(KEY_CACHED_URL, info?.downloadUrl)
-                .apply()
-            tag = info?.version
-            url = info?.downloadUrl
+            if (now - lastChecked < CHECK_INTERVAL_MS) {
+                tag = prefs.getString(KEY_CACHED_TAG, null)
+                url = prefs.getString(KEY_CACHED_URL, null)
+            } else {
+                val info = fetch()
+                if (info != null) {
+                    // 只有成功才记「已检查」，失败了下次启动会重试
+                    prefs.edit()
+                        .putLong(KEY_CHECKED_AT, now)
+                        .putString(KEY_CACHED_TAG, info.version)
+                        .putString(KEY_CACHED_URL, info.downloadUrl)
+                        .apply()
+                }
+                tag = info?.version
+                url = info?.downloadUrl
+            }
+
+            if (tag.isNullOrBlank() || url.isNullOrBlank()) {
+                Log.d(TAG, "没有可用的版本信息")
+                return@withContext null
+            }
+
+            val newer = isNewer(tag, currentVersion)
+            Log.d(TAG, "线上=$tag 当前=$currentVersion 有更新=$newer")
+            if (newer) UpdateInfo(tag, url, "") else null
         }
 
-        if (tag.isNullOrBlank() || url.isNullOrBlank()) return null
-        return if (isNewer(tag, currentVersion)) UpdateInfo(tag, url, "") else null
+    private fun fetch(): UpdateInfo? {
+        return try {
+            val conn = URL(API).openConnection() as HttpURLConnection
+            conn.connectTimeout = 8_000
+            conn.readTimeout = 8_000
+            conn.setRequestProperty("Accept", "application/vnd.github+json")
+            conn.setRequestProperty("User-Agent", "Halt-Android")
+            val body = conn.inputStream.bufferedReader().use { it.readText() }
+            conn.disconnect()
+
+            val json = JSONObject(body)
+            val tag = json.optString("tag_name")
+            if (tag.isBlank()) return null
+
+            var download = json.optString("html_url")
+            val assets = json.optJSONArray("assets")
+            if (assets != null && assets.length() > 0) {
+                val first = assets.getJSONObject(0).optString("browser_download_url")
+                if (first.isNotBlank()) download = first
+            }
+            UpdateInfo(version = tag, downloadUrl = download, notes = json.optString("body"))
+        } catch (t: Throwable) {
+            Log.w(TAG, "检查更新失败: ${t.javaClass.simpleName} ${t.message}")
+            null
+        }
     }
-
-    private fun fetch(): UpdateInfo? = runCatching {
-        val conn = URL(API).openConnection() as HttpURLConnection
-        conn.connectTimeout = 8_000
-        conn.readTimeout = 8_000
-        conn.setRequestProperty("Accept", "application/vnd.github+json")
-        conn.setRequestProperty("User-Agent", "Halt-Android")
-        val body = conn.inputStream.bufferedReader().use { it.readText() }
-        conn.disconnect()
-
-        val json = JSONObject(body)
-        val tag = json.optString("tag_name")
-        if (tag.isBlank()) return null
-
-        var download = json.optString("html_url")
-        val assets = json.optJSONArray("assets")
-        if (assets != null && assets.length() > 0) {
-            val first = assets.getJSONObject(0).optString("browser_download_url")
-            if (first.isNotBlank()) download = first
-        }
-        UpdateInfo(version = tag, downloadUrl = download, notes = json.optString("body"))
-    }.getOrNull()
 
     /** "v0.1.3" vs "0.1.2" —— 按数字逐段比较。 */
     fun isNewer(latest: String, current: String): Boolean {

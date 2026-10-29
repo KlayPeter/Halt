@@ -50,7 +50,8 @@ fun MainScreen(
     onOpenAccessibility: () -> Unit,
     onOpenOverlay: () -> Unit,
     onOpenNotifications: () -> Unit,
-    onRecheckPermissions: () -> Unit
+    onRecheckPermissions: () -> Unit,
+    onOpenReleases: () -> Unit
 ) {
     var tab by remember { mutableStateOf(initialTab) }
 
@@ -75,7 +76,8 @@ fun MainScreen(
                         onOpenAccessibility = onOpenAccessibility,
                         onOpenOverlay = onOpenOverlay,
                         onOpenNotifications = onOpenNotifications,
-                        onRecheckPermissions = onRecheckPermissions
+                        onRecheckPermissions = onRecheckPermissions,
+                        onOpenReleases = onOpenReleases
                     )
                 }
             }

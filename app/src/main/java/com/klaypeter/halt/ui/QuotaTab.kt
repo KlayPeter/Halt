@@ -63,7 +63,8 @@ fun QuotaTab(
     onOpenAccessibility: () -> Unit,
     onOpenOverlay: () -> Unit,
     onOpenNotifications: () -> Unit,
-    onRecheckPermissions: () -> Unit
+    onRecheckPermissions: () -> Unit,
+    onOpenReleases: () -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
@@ -203,6 +204,16 @@ fun QuotaTab(
                 modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 4.dp)
             ) {
                 Text("＋ 添加额度", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
+
+        item {
+            TextButton(onClick = onOpenReleases, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Halt v${com.klaypeter.halt.BuildConfig.VERSION_NAME} · 检查更新",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

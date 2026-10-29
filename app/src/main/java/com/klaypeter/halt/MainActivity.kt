@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
         private const val PREFS = "app"
         private const val KEY_LAST_VERSION = "last_version_code"
         private const val KEY_SKIPPED_UPDATE = "skipped_update_version"
+        private const val RELEASES_URL = "https://github.com/KlayPeter/Halt/releases/latest"
     }
 
     private val usageViewModel: UsageViewModel by viewModels()
@@ -100,7 +101,8 @@ class MainActivity : ComponentActivity() {
                         onOpenAccessibility = guardViewModel::openAccessibility,
                         onOpenOverlay = guardViewModel::openOverlay,
                         onOpenNotifications = guardViewModel::openNotifications,
-                        onRecheckPermissions = guardViewModel::refreshPermissions
+                        onRecheckPermissions = guardViewModel::refreshPermissions,
+                        onOpenReleases = { openUrl(RELEASES_URL) }
                     )
                 }
 
