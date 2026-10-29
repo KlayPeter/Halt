@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 <img src="docs/logo.svg" width="96" alt="Halt">
 
@@ -13,8 +13,9 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)](#)
 [![Compose](https://img.shields.io/badge/Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)](#)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+[![Android CI](https://github.com/KlayPeter/Halt/actions/workflows/android.yml/badge.svg)](https://github.com/KlayPeter/Halt/actions/workflows/android.yml)
 
-<a href="../../releases/latest"><img src="https://img.shields.io/badge/⬇_下载_APK-v0.1.0-6C5CE7?style=for-the-badge" alt="下载 APK" height="36"></a>
+<a href="../../releases/latest"><img src="https://img.shields.io/badge/⬇_下载_APK-v0.1.1-6C5CE7?style=for-the-badge" alt="下载 APK" height="36"></a>
 
 <sub>6.6 MB · Android 8.0+ · 无需 Google 服务</sub>
 
@@ -73,13 +74,14 @@
 
 | | |
 |---|---|
-| 🎯 **额度自己填** | 选一个 App，填分钟数。没有模板，你说多少就是多少 |
+| 🎯 **额度自己填** | 选一个 App，填每日分钟数。没有模板，你说多少就是多少 |
 | ⏱ **实时倒计时** | 顶部悬浮胶囊，每秒走一格。可以划走，划走这次不再打扰 |
 | 🔔 **三段式提醒** | 剩 5 分钟通知 → 到点通知 → 5 分钟宽限后强退 |
 | 🚪 **真的进不去** | 额度用完后，每次打开都被遮罩盖住并踢回桌面 |
-| 🔒 **PIN 保护** | 重置/删除额度要密码 —— 不然三秒就能破解自己 |
+| 🔒 **PIN 保护** | 加时 / 删除额度要密码 —— 不然三秒就能破解自己 |
 | 📊 **今日统计** | 每个 App 用了多久、打开几次，彩色分布条一眼看清 |
-| 🛡 **自恢复** | 会话时间落盘，进程被杀后补记；服务被关会主动通知你 |
+| 🛡 **跨天自动重置** | 额度按自然日算，0 点自动归零，不用手动清 |
+| 🧾 **口径一致** | 「今日」和「额度」读的是同一份系统统计，不会互相打脸 |
 | 🌙 **深色模式** | 跟着系统走 |
 
 ---
@@ -88,7 +90,7 @@
 
 **不想编译？直接下 APK：**
 
-[**⬇ Halt-v0.1.0.apk**](https://github.com/KlayPeter/Halt/releases/download/v0.1.0/Halt-v0.1.0.apk) · 6.6 MB · 已签名
+[**⬇ Halt-v0.1.1.apk**](https://github.com/KlayPeter/Halt/releases/download/v0.1.1/Halt-v0.1.1.apk) · 6.6 MB · 已签名
 
 1. 手机上下载这个 APK，允许「安装未知来源应用」
 2. 打开 Halt → 「额度」页 → 按提示开三个权限（见下一节）
@@ -175,7 +177,7 @@ guard/                Android 相关，只负责执行
   GuardHealthWorker.kt  15 分钟自检服务是否还活着
   BootReceiver.kt       开机拉起守护
 
-data/                  Room：额度、使用时长
+data/                  Room：额度（每日额度+加时）；使用时长来自系统统计
 security/              PIN：PBKDF2 + 随机盐
 ui/                    Compose：今日 / 额度 / 密码盘
 ```
@@ -236,9 +238,10 @@ install.bat    :: 编译 + 装到手机 + 重绑无障碍
 - [x] 进程被杀后的时长补记
 - [x] 服务自检 + 开机自启
 - [x] 签名 APK / Release
-- [ ] 额度按天自动重置
+- [x] 额度按天自动重置（跨天自动清零）
 - [ ] 指纹解锁（BiometricPrompt）
 - [ ] 完成任务 → 回来兑换额度（`grantedMinutes`）
+- [ ] 数据导出 / 导入
 - [ ] 周报 / 趋势图
 - [ ] 应用白名单：给「必须能用」的 App 开豁免
 

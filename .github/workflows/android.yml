@@ -37,6 +37,11 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
 
+      - name: Probe Maven Central
+        run: |
+          curl -s -o /dev/null -w "central pom: %{http_code}\n" -m 30 \
+            https://repo1.maven.org/maven2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/2.0.21-1.0.25/com.google.devtools.ksp.gradle.plugin-2.0.21-1.0.25.pom
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
