@@ -20,9 +20,11 @@ import kotlinx.coroutines.withContext
 data class PermState(
     val accessibility: Boolean = false,
     val overlay: Boolean = false,
-    val notifications: Boolean = false
+    val notifications: Boolean = false,
+    val usageAccess: Boolean = false
 ) {
-    val allOk: Boolean get() = accessibility && overlay && notifications
+    /** 四项全开，拦截才真正生效。 */
+    val allOk: Boolean get() = accessibility && overlay && notifications && usageAccess
 }
 
 private const val GRANT_MS = 15 * 60_000L
@@ -41,13 +43,25 @@ class GuardViewModel(app: Application) : AndroidViewModel(app) {
     private val _perm = MutableStateFlow(PermState())
     val perm: StateFlow<PermState> = _perm.asStateFlow()
 
+    /** 第一次检查完成之前不要拦着用户看启动页。 */
+    private val _permReady = MutableStateFlow(false)
+    val permReady: StateFlow<Boolean> = _permReady.asStateFlow()
+
     /** 每次回到前台刷新一次：用户可能刚在系统设置里授权完回来。 */
     fun refreshPermissions() {
-        _perm.value = PermState(
-            accessibility = Permissions.accessibilityEnabled(context),
-            overlay = Permissions.overlayAllowed(context),
-            notifications = Permissions.notificationsAllowed(context)
-        )
+        viewModelScope.launch {
+            val usage = withContext(Dispatchers.IO) {
+                runCatching { com.klaypeter.halt.data.UsageRepository(context).hasUsageAccess() }
+                    .getOrDefault(false)
+            }
+            _perm.value = PermState(
+                accessibility = Permissions.accessibilityEnabled(context),
+                overlay = Permissions.overlayAllowed(context),
+                notifications = Permissions.notificationsAllowed(context),
+                usageAccess = usage
+            )
+            _permReady.value = true
+        }
     }
 
     fun loadApps() {
