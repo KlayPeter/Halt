@@ -22,9 +22,11 @@ import com.klaypeter.halt.ui.PostUpdateDialog
 import com.klaypeter.halt.ui.SetupScreen
 import com.klaypeter.halt.ui.UiState
 import com.klaypeter.halt.ui.UpdateAvailableDialog
+import com.klaypeter.halt.ui.UpdateProgressDialog
 import com.klaypeter.halt.ui.UsageViewModel
 import com.klaypeter.halt.ui.theme.ScreenTimeTheme
 import com.klaypeter.halt.updater.UpdateChecker
+import com.klaypeter.halt.updater.UpdateInstaller
 import com.klaypeter.halt.updater.UpdateInfo
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
@@ -50,6 +52,9 @@ class MainActivity : ComponentActivity() {
 
     private var updateInfo by mutableStateOf<UpdateInfo?>(null)
     private var showPostUpdate by mutableStateOf(false)
+
+    /** null 表示没在下载；-1 表示拿不到进度。 */
+    private var downloadProgress by mutableStateOf<Int?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -111,14 +116,18 @@ class MainActivity : ComponentActivity() {
                         version = info.version,
                         current = BuildConfig.VERSION_NAME,
                         onDownload = {
-                            openUrl(info.downloadUrl)
                             updateInfo = null
+                            startUpdate(info)
                         },
                         onLater = {
                             skipVersion(info.version)
                             updateInfo = null
                         }
                     )
+                }
+
+                downloadProgress?.let { percent ->
+                    UpdateProgressDialog(progress = percent)
                 }
 
                 if (showPostUpdate) {
@@ -156,6 +165,33 @@ class MainActivity : ComponentActivity() {
             val skipped = getSharedPreferences(PREFS, MODE_PRIVATE)
                 .getString(KEY_SKIPPED_UPDATE, null)
             if (info.version != skipped) updateInfo = info
+        }
+    }
+
+    /** 应用内更新：先确认有安装权限，再下再装。 */
+    private fun startUpdate(info: UpdateInfo) {
+        if (!UpdateInstaller.canInstall(this)) {
+            UpdateInstaller.openInstallSettings(this)
+            android.widget.Toast.makeText(this, "先允许「安装未知应用」，回来再点一次更新", android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
+        downloadProgress = 0
+        lifecycleScope.launch {
+            val apk = runCatching {
+                UpdateInstaller.download(this@MainActivity, info.downloadUrl) { percent ->
+                    runOnUiThread { downloadProgress = percent }
+                }
+            }.getOrNull()
+
+            downloadProgress = null
+            if (apk == null) {
+                android.widget.Toast.makeText(this@MainActivity, "下载失败，检查一下网络", android.widget.Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            runCatching { UpdateInstaller.install(this@MainActivity, apk) }
+                .onFailure {
+                    android.widget.Toast.makeText(this@MainActivity, "无法唤起安装器", android.widget.Toast.LENGTH_LONG).show()
+                }
         }
     }
 

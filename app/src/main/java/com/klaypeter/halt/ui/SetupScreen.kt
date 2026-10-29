@@ -227,17 +227,51 @@ fun UpdateAvailableDialog(
         title = { Text("发现新版本 $version", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
         text = {
             Text(
-                "当前版本 $current。新版本会直接下载 APK，装之前记得先把无障碍打开一遍。",
+                "当前版本 $current。点「立即更新」会直接下载并调起安装，装完记得回来看一眼权限。",
                 fontSize = 13.sp,
                 lineHeight = 20.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         confirmButton = {
-            TextButton(onClick = onDownload) { Text("去下载") }
+            TextButton(onClick = onDownload) { Text("立即更新") }
         },
         dismissButton = {
             TextButton(onClick = onLater) { Text("以后再说") }
         }
+    )
+}
+/** 下载进度。下载的是 6MB 左右的 APK，通常几秒钟。 */
+@Composable
+fun UpdateProgressDialog(progress: Int) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { },
+        shape = RoundedCornerShape(26.dp),
+        title = { Text("正在下载更新", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                if (progress >= 0) {
+                    androidx.compose.material3.LinearProgressIndicator(
+                        progress = { progress / 100f },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        "$progress%",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                } else {
+                    androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text(
+                        "正在下载…",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = { }
     )
 }

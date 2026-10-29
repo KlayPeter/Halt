@@ -28,7 +28,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
-    <!-- 检查更新（读 GitHub Release） -->
+    <!-- 应用内更新：下载完直接调起系统安装器 -->`n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />`n`n    <!-- 检查更新（读 GitHub Release） -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- 开机后重新拉起守护 -->
@@ -77,6 +77,17 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="保持屏幕时间守护进程存活，确保额度到点时能拦下被管控的应用。" />
         </service>
+
+        <!-- 更新下载的 APK 通过 FileProvider 交给系统安装器 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <receiver
             android:name=".guard.BootReceiver"
