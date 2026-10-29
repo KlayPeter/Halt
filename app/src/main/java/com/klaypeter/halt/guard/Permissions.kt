@@ -1,10 +1,11 @@
-﻿package com.klaypeter.halt.guard
+package com.klaypeter.halt.guard
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.PowerManager
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import androidx.core.app.NotificationManagerCompat
@@ -43,6 +44,37 @@ object Permissions {
     }
 
     fun overlayAllowed(context: Context): Boolean = Settings.canDrawOverlays(context)
+
+    /**
+     * 是否已被排除在电池优化之外。
+     * 国产 ROM 杀后台是「额度静默失效」的头号原因，所以这一项要主动引导。
+     */
+    fun batteryUnrestricted(context: Context): Boolean {
+        val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return true
+        return runCatching { pm.isIgnoringBatteryOptimizations(context.packageName) }.getOrDefault(true)
+    }
+
+    /** 先试系统自带的白名单弹窗，不行就退到应用详情页（小米的省电策略在那里面）。 */
+    fun requestBatteryExemption(context: Context) {
+        val direct = Intent(
+            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+            Uri.parse("package:${context.packageName}")
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        val ok = runCatching { context.startActivity(direct) }.isSuccess
+        if (!ok) openAppDetails(context)
+    }
+
+    fun openAppDetails(context: Context) {
+        runCatching {
+            context.startActivity(
+                Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:${context.packageName}")
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
+    }
 
     fun notificationsAllowed(context: Context): Boolean =
         NotificationManagerCompat.from(context).areNotificationsEnabled()

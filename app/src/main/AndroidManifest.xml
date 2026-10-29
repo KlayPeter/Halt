@@ -28,6 +28,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
+    <!-- 引导用户把省电策略设成「无限制」，否则守护会被系统杀掉 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <!-- 应用内更新：下载完直接调起系统安装器 -->`n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />`n`n    <!-- 检查更新（读 GitHub Release） -->
     <uses-permission android:name="android.permission.INTERNET" />
 

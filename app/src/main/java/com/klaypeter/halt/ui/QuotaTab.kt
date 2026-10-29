@@ -67,6 +67,7 @@ fun QuotaTab(
     onOpenReleases: () -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
 
     // 「重置 / 删除」这些改额度的动作要过密码；进 App 看数据不用
     val context = LocalContext.current
@@ -105,6 +106,23 @@ fun QuotaTab(
             onSet = { pin -> pinStore.set(pin) },
             onDismiss = { changePinStep = 0 },
             onConfirmed = { changePinStep = 0 }
+        )
+    }
+
+    if (showAbout) {
+        AboutDialog(
+            onDismiss = { showAbout = false },
+            onOpenProject = {
+                showAbout = false
+                runCatching {
+                    context.startActivity(
+                        android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse("https://github.com/KlayPeter/Halt")
+                        ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                }
+            }
         )
     }
 
@@ -208,12 +226,24 @@ fun QuotaTab(
         }
 
         item {
-            TextButton(onClick = onOpenReleases, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "Halt v${com.klaypeter.halt.BuildConfig.VERSION_NAME} · 检查更新",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                TextButton(onClick = onOpenReleases) {
+                    Text(
+                        "v${com.klaypeter.halt.BuildConfig.VERSION_NAME} · 检查更新",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                TextButton(onClick = { showAbout = true }) {
+                    Text(
+                        "关于",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

@@ -21,10 +21,15 @@ data class PermState(
     val accessibility: Boolean = false,
     val overlay: Boolean = false,
     val notifications: Boolean = false,
-    val usageAccess: Boolean = false
+    val usageAccess: Boolean = false,
+    /** 省电策略是否已设成「无限制」。不设会被系统杀掉，额度静默失效。 */
+    val batteryUnrestricted: Boolean = true
 ) {
     /** 四项全开，拦截才真正生效。 */
     val allOk: Boolean get() = accessibility && overlay && notifications && usageAccess
+
+    /** 还需要引导：四项没齐，或者后台随时会被杀。 */
+    val needsSetup: Boolean get() = !allOk || !batteryUnrestricted
 }
 
 private const val GRANT_MS = 15 * 60_000L
@@ -58,7 +63,8 @@ class GuardViewModel(app: Application) : AndroidViewModel(app) {
                 accessibility = Permissions.accessibilityEnabled(context),
                 overlay = Permissions.overlayAllowed(context),
                 notifications = Permissions.notificationsAllowed(context),
-                usageAccess = usage
+                usageAccess = usage,
+                batteryUnrestricted = Permissions.batteryUnrestricted(context)
             )
             _permReady.value = true
         }
@@ -90,4 +96,6 @@ class GuardViewModel(app: Application) : AndroidViewModel(app) {
     fun openOverlay() = Permissions.openOverlaySettings(context)
 
     fun openNotifications() = Permissions.openNotificationSettings(context)
+
+    fun openBattery() = Permissions.requestBatteryExemption(context)
 }

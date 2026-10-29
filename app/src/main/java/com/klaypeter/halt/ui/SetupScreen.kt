@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * 一进 App 就检查权限，缺什么引导什么。
+ * 一进 App 就检查，缺什么引导什么。
  * 更新安装包后无障碍常被系统关掉，这个页面就是给那一刻准备的。
  */
 @Composable
@@ -41,6 +41,7 @@ fun SetupScreen(
     onOpenAccessibility: () -> Unit,
     onOpenOverlay: () -> Unit,
     onOpenNotifications: () -> Unit,
+    onOpenBattery: () -> Unit,
     onRecheck: () -> Unit,
     onSkip: () -> Unit
 ) {
@@ -93,8 +94,19 @@ fun SetupScreen(
             granted = perm.notifications,
             onOpen = onOpenNotifications
         )
+        Spacer(Modifier.height(10.dp))
+        PermissionRow(
+            title = "后台不被杀",
+            desc = "省电策略设为「无限制」。不设的话守护会被系统悄悄杀掉",
+            granted = perm.batteryUnrestricted,
+            onOpen = onOpenBattery,
+            badge = "建议"
+        )
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(18.dp))
+        PrivacyCard()
+
+        Spacer(Modifier.height(18.dp))
         Button(
             onClick = onRecheck,
             shape = RoundedCornerShape(999.dp),
@@ -118,7 +130,8 @@ private fun PermissionRow(
     desc: String,
     granted: Boolean,
     onOpen: () -> Unit,
-    highlight: Boolean = false
+    highlight: Boolean = false,
+    badge: String? = null
 ) {
     Card(
         shape = RoundedCornerShape(20.dp),
@@ -157,6 +170,15 @@ private fun PermissionRow(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
+                    if (badge != null && !granted) {
+                        Spacer(Modifier.size(6.dp))
+                        Text(
+                            badge,
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
                 Text(
                     desc,
@@ -181,6 +203,44 @@ private fun PermissionRow(
                 )
             }
         }
+    }
+}
+
+/** 隐私说明：一个要「看屏幕」权限的 App，必须自己说清楚。 */
+@Composable
+fun PrivacyCard() {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(0.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "它到底读了什么",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.height(8.dp))
+            PrivacyLine("只读「当前是哪个 App」，不读屏幕内容、键盘输入、通知内容")
+            PrivacyLine("所有数据只存在本机，没有服务器，不上传")
+            PrivacyLine("只有检查更新时才联网，可以在额度页底部手动触发")
+        }
+    }
+}
+
+@Composable
+private fun PrivacyLine(text: String) {
+    Row(modifier = Modifier.padding(vertical = 3.dp)) {
+        Text("·", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text,
+            fontSize = 12.sp,
+            lineHeight = 18.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -213,7 +273,7 @@ fun PostUpdateDialog(
     )
 }
 
-/** 发现新版本。点「去下载」跳到 Release 页面，走系统安装器。 */
+/** 发现新版本。点「立即更新」直接应用内下载并调起安装器。 */
 @Composable
 fun UpdateAvailableDialog(
     version: String,
@@ -241,7 +301,8 @@ fun UpdateAvailableDialog(
         }
     )
 }
-/** 下载进度。下载的是 6MB 左右的 APK，通常几秒钟。 */
+
+/** 下载进度。 */
 @Composable
 fun UpdateProgressDialog(progress: Int) {
     androidx.compose.material3.AlertDialog(
@@ -273,5 +334,40 @@ fun UpdateProgressDialog(progress: Int) {
             }
         },
         confirmButton = { }
+    )
+}
+
+/** 关于：隐私、数据、开源。 */
+@Composable
+fun AboutDialog(onDismiss: () -> Unit, onOpenProject: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(26.dp),
+        title = { Text("关于 Halt", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text(
+                    "v" + com.klaypeter.halt.BuildConfig.VERSION_NAME,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(12.dp))
+                PrivacyLine("只读「当前是哪个 App」，不读屏幕内容、键盘输入、通知内容")
+                PrivacyLine("额度、密码摘要、使用记录都存在本机，没有服务器")
+                PrivacyLine("只有检查更新时才联网")
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "MIT License · github.com/KlayPeter/Halt",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onOpenProject) { Text("打开项目页") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("知道了") }
+        }
     )
 }

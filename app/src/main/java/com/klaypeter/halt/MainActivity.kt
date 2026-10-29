@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
                 val perm by guardViewModel.perm.collectAsStateWithLifecycle()
                 val permReady by guardViewModel.permReady.collectAsStateWithLifecycle()
 
-                if (permReady && !perm.allOk && !setupSkipped) {
+                if (permReady && perm.needsSetup && !setupSkipped) {
                     // 一进 App 就检查，缺什么引导什么
                     SetupScreen(
                         perm = perm,
@@ -77,6 +77,7 @@ class MainActivity : ComponentActivity() {
                         onOpenAccessibility = guardViewModel::openAccessibility,
                         onOpenOverlay = guardViewModel::openOverlay,
                         onOpenNotifications = guardViewModel::openNotifications,
+                        onOpenBattery = guardViewModel::openBattery,
                         onRecheck = guardViewModel::refreshPermissions,
                         onSkip = { setupSkipped = true }
                     )
